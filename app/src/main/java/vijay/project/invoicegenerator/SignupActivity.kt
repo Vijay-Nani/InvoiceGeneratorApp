@@ -62,7 +62,8 @@ fun FillActivityScreen() {
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var FullName by remember { mutableStateOf("") }
-    var Lastname by remember { mutableStateOf("") }
+    var CompanyName by remember { mutableStateOf("") }
+    var Address by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
     val context = LocalContext.current
@@ -148,9 +149,23 @@ fun FillActivityScreen() {
 
                     // Last Name TextField
                     OutlinedTextField(
-                        value = Lastname,
-                        onValueChange = { Lastname = it },
-                        label = { Text("Last Name") },
+                        value = CompanyName,
+                        onValueChange = { CompanyName = it },
+                        label = { Text("Company Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.LightGray,
+                            unfocusedContainerColor = Color.LightGray,
+                            disabledContainerColor = Color.LightGray,
+                            focusedBorderColor = Color(0xFF6200EE),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = Address,
+                        onValueChange = { Address = it },
+                        label = { Text("Address") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.LightGray,
@@ -233,19 +248,18 @@ fun FillActivityScreen() {
                                 FullName.isBlank() -> {
                                     errorMessage = "Please enter your full name."
                                 }
-
-                                Lastname.isBlank() -> {
-                                    errorMessage = "Please enter your last name."
+                                CompanyName.isBlank() -> {
+                                    errorMessage = "Please enter your company name."
                                 }
-
+                                Address.isBlank() -> {
+                                    errorMessage = "Please enter your address."
+                                }
                                 email.isBlank() -> {
                                     errorMessage = "Please enter your email."
                                 }
-
                                 password.isBlank() -> {
                                     errorMessage = "Please enter your password."
                                 }
-
                                 confirmPassword.isBlank() -> {
                                     errorMessage = "Please confirm your password."
                                 }
