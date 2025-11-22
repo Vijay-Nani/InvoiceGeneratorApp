@@ -41,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlin.jvm.java
 
@@ -53,6 +54,11 @@ class SignInActivity : ComponentActivity() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun EnterActivityScreenPreview() {
+    EnterActivityScreen()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
