@@ -1,10 +1,10 @@
 package vijay.project.invoicegenerator
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -35,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.platform.LocalContext
+
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +48,8 @@ class HomeActivity : ComponentActivity() {
 @Composable
 fun HomeScreen()
 {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -76,8 +76,6 @@ fun HomeScreen()
                         .size(44.dp)
                         .padding(start = 8.dp)
                         .clickable {
-//                        val intent = Intent(context, TravellerDetailsActivity::class.java)
-//                        context.startActivity(intent)
                         }
 
                 )
@@ -197,13 +195,13 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
+                        (context as Activity).startActivity(
+                            Intent(
+                                context,
+                                CreateInvoiceActivity::class.java
+                            )
+                        )
+                        (context as Activity).finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color
@@ -237,13 +235,6 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color
@@ -276,13 +267,6 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color
@@ -330,13 +314,6 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color
@@ -370,13 +347,6 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color
@@ -410,13 +380,6 @@ fun HomeScreen()
                 modifier = Modifier
                     .weight(1f)
                     .clickable {
-//                        context.startActivity(
-//                            Intent(
-//                                context,
-//                                SearchDoctorsActivity::class.java
-//                            )
-//                        )
-//                        context.finish()
                     }
                     .background(
                         color = Color(0xFFEFEFEF),   // your background color

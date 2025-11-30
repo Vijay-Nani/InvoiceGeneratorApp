@@ -10,6 +10,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InvoiceGenerator"
         tools:targetApi="31">
+
+        <activity
+            android:name=".CreateInvoiceActivity"
+            android:exported="false" />
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
