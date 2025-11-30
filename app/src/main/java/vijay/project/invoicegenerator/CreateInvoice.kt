@@ -1,5 +1,14 @@
 package vijay.project.invoicegenerator
 
+
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,88 +21,58 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.unit.dp
-import vijay.project.invoicegenerator.ui.theme.Purple40
-
-
-// Single-file Compose screen: CreateInvoiceScreenWithAddItem.kt
-// Drop into your Compose module. Adjust package if needed.
-
-import android.annotation.SuppressLint
-import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.text.KeyboardOptions as FKeyboardOptions
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.border
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalDensity
+import com.google.firebase.database.FirebaseDatabase
+import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.text.NumberFormat
 import java.util.Locale
-import androidx.compose.runtime.mutableStateListOf
-
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 
 class CreateInvoiceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,10 +84,14 @@ class CreateInvoiceActivity : ComponentActivity() {
 }
 
 data class InvoiceItem(
-    val name: String,
-    val description: String,
-    val amount: String
-)
+    val name: String = "",
+    val description: String = "",
+    val amount: String = ""
+) {
+    // Firebase requires this
+    constructor() : this("", "", "")
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -121,224 +104,268 @@ fun CreateInvoiceScreen() {
     var clientName by rememberSaveable { mutableStateOf("") }
     var clientEmail by rememberSaveable { mutableStateOf("") }
 
-
     // Item list and dialog state
     val itemList = remember { mutableStateListOf<InvoiceItem>() }
     var showAddItemDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Header row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = Color(0xFF6D4C41)) // fallback brown
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Create Invoice",
-                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Invoice Number
-        Text(
-            text = "Invoice Number",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            value = invoiceNum,
-            onValueChange = { invoiceNum = it },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
-            ),
-            singleLine = true,
-            placeholder = { Text("Enter invoice number") }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Invoice Date
-        Text(
-            text = "Invoice Date",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Our DatePicker composable (reusable)
-        DatePickerField(1, onDateSelected = { fieldType, Selecteddate ->
-            if (fieldType == 1){ invoiceDate = Selecteddate }
-        })
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Due Date
-        Text(
-            text = "Due Date",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        DatePickerField(fieldType = 2, onDateSelected = { fieldType, Selecteddate ->
-            if (fieldType == 2){
-                Log.e("test","in-$Selecteddate")
-
-
-                invoiceDueDate = Selecteddate }})
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Client Name
-        Text(
-            text = "Client Name",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            value = clientName,
-            onValueChange = { clientName = it },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
-            ),
-            placeholder = { Text("Enter client name") }
-        )
-
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Client Email
-        Text(
-            text = "Client Email",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            value = clientEmail,
-            onValueChange = { clientEmail = it },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedIndicatorColor = Color.Black,
-                unfocusedIndicatorColor = Color.Gray
-            ),
-            placeholder = { Text("client@example.com") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-        )
-
-
-        // Items header + Add Item button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Items",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "Add Item",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(color = Color.Red)
-                    .clickable { showAddItemDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Show current items (dynamically from itemList)
-        if (itemList.isEmpty()) {
-            Text(
-                text = "No items yet. Tap Add Item to create one.",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = Color.Gray
-            )
-        } else {
-            itemList.forEach { item ->
-
-                ItemCard(itemName = item.name, description = item.description, amount = item.amount)
-            }
-        }
-
-
-
-        // Summary card that computes totals from itemList
-        SummaryCardFromItems(
-            onGenerateClicked = {
-                if (invoiceNum.isBlank() || invoiceDate.isBlank() || invoiceDueDate.isBlank() || clientName.isBlank() || clientEmail.isBlank()) {
-                    Log.e("test","in-$invoiceNum")
-                    Log.e("test","in-$invoiceDate")
-                    Log.e("test","in-$invoiceDueDate")
-                    Log.e("test","in-$clientName")
-                    Log.e("test","in-$clientEmail")
-
-                    Toast.makeText(context, "All Fields 1", Toast.LENGTH_SHORT)
-                        .show()
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Create Invoice",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { (context as Activity).finish() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
                 }
-                else{
-                    Toast.makeText(context, "Report is Saved", Toast.LENGTH_SHORT)
-                        .show()}
-            },
-            itemList = itemList
-        )
+            )
+        },
+        content = { innerPadding ->
 
-        Spacer(modifier = Modifier.height(24.dp))
-    }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+            ) {
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Invoice Number
+                Text(
+                    text = "Invoice Number",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    value = invoiceNum,
+                    onValueChange = { invoiceNum = it },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    singleLine = true,
+                    placeholder = { Text("Enter invoice number") }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Invoice Date
+                Text(
+                    text = "Invoice Date",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Our DatePicker composable (reusable)
+                DatePickerField(1, onDateSelected = { fieldType, Selecteddate ->
+                    if (fieldType == 1) {
+                        invoiceDate = Selecteddate
+                    }
+                })
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Due Date
+                Text(
+                    text = "Due Date",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                DatePickerField(fieldType = 2, onDateSelected = { fieldType, Selecteddate ->
+                    if (fieldType == 2) {
+                        Log.e("test", "in-$Selecteddate")
+
+
+                        invoiceDueDate = Selecteddate
+                    }
+                })
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Client Name
+                Text(
+                    text = "Client Name",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    value = clientName,
+                    onValueChange = { clientName = it },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    placeholder = { Text("Enter client name") }
+                )
+
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Client Email
+                Text(
+                    text = "Client Email",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    value = clientEmail,
+                    onValueChange = { clientEmail = it },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedIndicatorColor = Color.Black,
+                        unfocusedIndicatorColor = Color.Gray
+                    ),
+                    placeholder = { Text("client@example.com") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+
+
+                // Items header + Add Item button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Items",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = "Add Item",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(color = Color.Red)
+                            .clickable { showAddItemDialog = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Show current items (dynamically from itemList)
+                if (itemList.isEmpty()) {
+                    Text(
+                        text = "No items yet. Tap Add Item to create one.",
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color.Gray
+                    )
+                } else {
+                    itemList.forEach { item ->
+
+                        ItemCard(
+                            itemName = item.name,
+                            description = item.description,
+                            amount = item.amount
+                        )
+                    }
+                }
+
+
+                // Summary card that computes totals from itemList
+                SummaryCardFromItems(
+                    onGenerateClicked = { total, tax, discount, toPay ->
+
+                        if (invoiceNum.isBlank() || invoiceDate.isBlank() || invoiceDueDate.isBlank() || clientName.isBlank() || clientEmail.isBlank()) {
+                            Toast.makeText(context, "All Fields Mandatory", Toast.LENGTH_SHORT)
+                                .show()
+                        } else if (itemList.isEmpty()) {
+                            Toast.makeText(context, "Add Products", Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+
+
+                            val invoiceData = InvoiceData(
+                                invoicenumber = invoiceNum,
+                                invoicedate = invoiceDate,
+                                duedate = invoiceDueDate,
+                                clientname = clientName,
+                                clientemail = clientEmail,
+                                items = itemList,
+                                total = total.toString(),
+                                tax = tax.toString(),
+                                discount = discount.toString(),
+                                topay = toPay.toString()
+                            )
+
+                            saveInvoiceToFirebase(
+                                invoiceData,
+                                context,
+                                onResult = { success, message ->
+                                    if (success) {
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                                            .show()
+
+                                        (context as Activity).finish()
+                                    } else {
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
+                                })
+
+                        }
+                    },
+                    itemList = itemList
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+        }
+
+
+    )
 
     // Add Item Dialog
     if (showAddItemDialog) {
@@ -346,7 +373,7 @@ fun CreateInvoiceScreen() {
             onDismiss = { showAddItemDialog = false },
             onSubmit = { name, desc, amt ->
                 // sanitize: treat amount as string but store a user-friendly string
-                val normalizedAmount = formatINR(parseAmountOrZero(amt))
+                val normalizedAmount = formatPound(parseAmountOrZero(amt))
                 itemList.add(InvoiceItem(name.trim(), desc.trim(), normalizedAmount))
                 showAddItemDialog = false
             }
@@ -371,7 +398,7 @@ fun DatePickerField(
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate()
 
-            Log.e("test","in-$selectedDate")
+            Log.e("test", "in-$selectedDate")
             onDateSelected(
                 fieldType,
                 selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: ""
@@ -385,7 +412,7 @@ fun DatePickerField(
     OutlinedTextField(
         value = selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: "",
         onValueChange = {
-            Log.e("test","in-$selectedDate")
+            Log.e("test", "in-$selectedDate")
             onDateSelected(
                 fieldType,
                 selectedDate?.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) ?: ""
@@ -461,7 +488,7 @@ fun AddItemDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it },
-                    placeholder = { Text("Amount (e.g., 1245 or ₹1,245)") },
+                    placeholder = { Text("Amount (e.g., 1245 or £1,245)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true
@@ -473,7 +500,6 @@ fun AddItemDialog(
                 onClick = {
                     if (name.isNotBlank() && amount.isNotBlank()) {
                         onSubmit(name, description, amount)
-                    } else {
                     }
                 }
             ) {
@@ -556,7 +582,7 @@ fun ItemCard(
 
 @Composable
 fun SummaryCardFromItems(
-    onGenerateClicked: () -> Unit,
+    onGenerateClicked: (total: Double, tax: Double, discount: Double, toPay: Double) -> Unit,
     itemList: List<InvoiceItem>,
     modifier: Modifier = Modifier,
     taxPercent: Double = 18.0,
@@ -594,11 +620,11 @@ fun SummaryCardFromItems(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SummaryRow(title = "Total Amount", value = formatINR(total))
-            SummaryRow(title = "Tax (${taxPercent.toInt()}%)", value = formatINR(tax))
+            SummaryRow(title = "Total Amount", value = formatPound(total))
+            SummaryRow(title = "Tax (${taxPercent.toInt()}%)", value = formatPound(tax))
             SummaryRow(
                 title = "Discount (${discountPercent.toInt()}%)",
-                value = formatINR(discount)
+                value = formatPound(discount)
             )
 
             Divider(
@@ -609,7 +635,7 @@ fun SummaryCardFromItems(
 
             SummaryRow(
                 title = "To Pay",
-                value = formatINR(toPay),
+                value = formatPound(toPay),
                 valueColor = Color.Red,
                 bold = true
             )
@@ -618,7 +644,7 @@ fun SummaryCardFromItems(
 
             Button(
                 onClick = {
-                    onGenerateClicked()
+                    onGenerateClicked(total, tax, discount, toPay)
 
                 },
                 modifier = Modifier
@@ -678,16 +704,15 @@ fun parseAmountOrZero(amountStr: String): Double {
     }
 }
 
-fun formatINR(value: Double): String {
+fun formatPound(value: Double): String {
     return try {
-        val nf = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+        val nf = NumberFormat.getCurrencyInstance(Locale.UK)
         nf.format(value)
     } catch (e: Exception) {
-        "₹${"%.2f".format(value)}"
+        "£${"%.2f".format(value)}"
     }
 }
 
-fun formatINR(value: Long): String = formatINR(value.toDouble())
 
 // ---------- Preview ----------
 @Preview(showBackground = true, heightDp = 1200)
@@ -714,11 +739,13 @@ fun CreateInvoicePreview() {
             ItemCard(
                 itemName = it.name,
                 description = it.description,
-                amount = formatINR(parseAmountOrZero(it.amount))
+                amount = formatPound(parseAmountOrZero(it.amount))
             )
         }
 
-        SummaryCardFromItems(onGenerateClicked = {}, itemList = sampleItems)
+        SummaryCardFromItems(onGenerateClicked = { total, tax, discount, toPay ->
+
+        }, itemList = sampleItems)
     }
 }
 
@@ -735,13 +762,52 @@ fun CreateInvoiceScreenPreview() {
 }
 
 data class InvoiceData(
-    val Invoicenumber: String = "",
-    val Invoicedate: String = "",
-    val Duedate: String = "",
-    val Clientname: String = "",
-    val Clientemail: String = "",
+    val invoicenumber: String = "",
+    val invoicedate: String = "",
+    val duedate: String = "",
+    val clientname: String = "",
+    val clientemail: String = "",
+    val items: List<InvoiceItem> = emptyList(),
+    val total: String = "",
+    val tax: String = "",
+    val discount: String = "",
+    val topay: String = ""
+) {
+    constructor() : this("", "", "", "", "", emptyList(), "", "", "", "")
+}
 
-    )
+
+
+
+fun saveInvoiceToFirebase(
+    invoice: InvoiceData,
+    context: Context,
+    onResult: (Boolean, String) -> Unit
+) {
+    val email = UserPrefs.getEmail(context)
+
+    val safeEmail = email.replace(".", "_")
+
+    val database = FirebaseDatabase.getInstance().getReference("Invoices")
+
+    // Push creates a unique ID for each invoice
+    val invoiceId = database.child(safeEmail).push().key
+
+    if (invoiceId == null) {
+        onResult(false, "Failed to generate invoice ID")
+        return
+    }
+
+    database.child(safeEmail)
+        .child(invoiceId)
+        .setValue(invoice)
+        .addOnSuccessListener {
+            onResult(true, "Invoice saved successfully")
+        }
+        .addOnFailureListener { error ->
+            onResult(false, error.message ?: "Something went wrong")
+        }
+}
 
 
 

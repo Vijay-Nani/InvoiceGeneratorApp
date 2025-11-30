@@ -4,6 +4,7 @@ package vijay.project.invoicegenerator
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -26,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +43,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlin.jvm.java
+import com.google.firebase.database.FirebaseDatabase
 
 class SignupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +60,6 @@ class SignupActivity : ComponentActivity() {
 fun FillActivityScreenPreview() {
     FillActivityScreen()
 }
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,9 +82,7 @@ fun FillActivityScreen() {
             .background(Color.Black) // Set the outer background color
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top Section with Back Arrow and Sign Up
             Box(
@@ -106,11 +103,9 @@ fun FillActivityScreen() {
 
                     Spacer(modifier = Modifier.width(18.dp))
                     Text(
-                        text = "Sign Up",
-                        fontWeight = FontWeight.Bold,
+                        text = "Sign Up", fontWeight = FontWeight.Bold,
 
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White
+                        style = MaterialTheme.typography.headlineSmall, color = Color.White
                     )
                 }
             }
@@ -219,10 +214,10 @@ fun FillActivityScreen() {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_password_24),
                                 contentDescription = "Toggle Password Visibility",
-                                modifier = Modifier.clickable { passwordVisible = !passwordVisible }
-                            )
-                        }
-                    )
+                                modifier = Modifier.clickable {
+                                    passwordVisible = !passwordVisible
+                                })
+                        })
 
 
                     OutlinedTextField(
@@ -242,10 +237,10 @@ fun FillActivityScreen() {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_password_24),
                                 contentDescription = "Toggle Password Visibility",
-                                modifier = Modifier.clickable { passwordVisible = !passwordVisible }
-                            )
-                        }
-                    )
+                                modifier = Modifier.clickable {
+                                    passwordVisible = !passwordVisible
+                                })
+                        })
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -256,26 +251,70 @@ fun FillActivityScreen() {
                                 FullName.isBlank() -> {
                                     errorMessage = "Please enter your full name."
                                 }
+
                                 CompanyName.isBlank() -> {
                                     errorMessage = "Please enter your company name."
                                 }
+
                                 Address.isBlank() -> {
                                     errorMessage = "Please enter your address."
                                 }
+
                                 email.isBlank() -> {
                                     errorMessage = "Please enter your email."
                                 }
+
                                 password.isBlank() -> {
                                     errorMessage = "Please enter your password."
                                 }
+
                                 confirmPassword.isBlank() -> {
                                     errorMessage = "Please confirm your password."
                                 }
 
-
                                 else -> {
                                     errorMessage = ""
 
+                                    val userData = AccountData(
+                                        name = FullName,
+                                        companyName = CompanyName,
+                                        address = Address,
+                                        email = email,
+                                        password = password
+                                    )
+
+
+                                    val db = FirebaseDatabase.getInstance()
+                                    val ref = db.getReference("BusinessAccounts")
+                                    ref.child(userData.email.replace(".", ",")).setValue(userData)
+                                        .addOnCompleteListener { task ->
+                                            if (task.isSuccessful) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Registration Successful",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
+                                                context.startActivity(
+                                                    Intent(
+                                                        context, SignInActivity::class.java
+                                                    )
+                                                )
+                                                (context as Activity).finish()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "User Registration Failed: ${task.exception?.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }.addOnFailureListener { exception ->
+                                            Toast.makeText(
+                                                context,
+                                                "User Registration Failed: ${exception.message}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
 
                                 }
                             }
@@ -295,13 +334,10 @@ fun FillActivityScreen() {
                     Row {
                         Text(text = "Already have an account? ", color = Color.Black)
                         Text(
-                            text = "Login",
-                            color = Color.Blue,
-                            modifier = Modifier.clickable {
+                            text = "Login", color = Color.Blue, modifier = Modifier.clickable {
                                 context.startActivity(Intent(context, SignInActivity::class.java))
                                 (context as Activity).finish()
-                            }
-                        )
+                            })
                     }
 
                 }
@@ -309,3 +345,12 @@ fun FillActivityScreen() {
         }
     }
 }
+
+data class AccountData
+    (
+    var name: String = "",
+    var companyName: String = "",
+    var address: String = "",
+    var email: String = "",
+    var password: String = "",
+)

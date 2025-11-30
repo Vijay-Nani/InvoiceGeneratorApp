@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +42,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlin.jvm.java
+import com.google.firebase.database.FirebaseDatabase
 
 class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -188,8 +187,63 @@ fun EnterActivityScreen() {
 
                                 else -> {
 
-                                    context.startActivity(Intent(context, HomeActivity::class.java))
-                                    (context as Activity).finish()
+                                    val database = FirebaseDatabase.getInstance()
+                                    val databaseReference = database.reference
+
+                                    val sanitizedEmail = email.replace(".", ",")
+
+                                    databaseReference.child("BusinessAccounts")
+                                        .child(sanitizedEmail)
+                                        .get()
+                                        .addOnSuccessListener { snapshot ->
+                                            if (snapshot.exists()) {
+                                                val accountData =
+                                                    snapshot.getValue(AccountData::class.java)
+                                                accountData?.let {
+
+                                                    if (password == it.password) {
+
+                                                        UserPrefs.markLoginStatus(context, true)
+                                                        UserPrefs.saveEmail(
+                                                            context,
+                                                            email = email
+                                                        )
+                                                        UserPrefs.saveName(context, it.name)
+
+
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Login Successfull",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+
+
+                                                        context.startActivity(
+                                                            Intent(
+                                                                context,
+                                                                HomeActivity::class.java
+                                                            )
+                                                        )
+                                                        (context as Activity).finish()
+
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Incorrect Credentials",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "No User Found",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }.addOnFailureListener { exception ->
+                                            println("Error retrieving data: ${exception.message}")
+                                        }
 
                                 }
                             }

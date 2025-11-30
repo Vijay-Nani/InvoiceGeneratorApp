@@ -56,6 +56,10 @@ class MainActivity : ComponentActivity() {
                 gotoSignInActivity(this)
             }
 
+            1->{
+                gotoHomeActivity(this)
+            }
+
         }
     }
 }
@@ -72,7 +76,14 @@ fun LoadingScreenCheck(isUserLoggedIn: (value: Int) -> Unit) {
     if (splashValue) {
         InvoiceGeneratorSplash()
     } else {
-        isUserLoggedIn.invoke(2)
+
+        if(UserPrefs.checkLoginStatus(context = LocalContext.current))
+        {
+            isUserLoggedIn.invoke(1)
+        }else{
+            isUserLoggedIn.invoke(2)
+        }
+
     }
 }
 
@@ -137,5 +148,10 @@ fun LoadingScreenPreview() {
 
 fun gotoSignInActivity(context: Activity) {
     context.startActivity(Intent(context, SignInActivity::class.java))
+    context.finish()
+}
+
+fun gotoHomeActivity(context: Activity) {
+    context.startActivity(Intent(context, HomeActivity::class.java))
     context.finish()
 }
