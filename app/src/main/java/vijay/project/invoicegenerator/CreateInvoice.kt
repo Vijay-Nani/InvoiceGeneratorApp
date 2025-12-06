@@ -88,7 +88,6 @@ data class InvoiceItem(
     val description: String = "",
     val amount: String = ""
 ) {
-    // Firebase requires this
     constructor() : this("", "", "")
 }
 
@@ -356,7 +355,9 @@ fun CreateInvoiceScreen() {
 
                         }
                     },
-                    itemList = itemList
+                    itemList = itemList,
+                    taxPercent = BusinessPrefs.getTaxPercentage(context).toDouble(),
+                    discountPercent = BusinessPrefs.getDiscountPercentage(context).toDouble()
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -761,22 +762,6 @@ fun CreateInvoiceScreenPreview() {
     }
 }
 
-data class InvoiceData(
-    val invoicenumber: String = "",
-    val invoicedate: String = "",
-    val duedate: String = "",
-    val clientname: String = "",
-    val clientemail: String = "",
-    val items: List<InvoiceItem> = emptyList(),
-    val total: String = "",
-    val tax: String = "",
-    val discount: String = "",
-    val topay: String = ""
-) {
-    constructor() : this("", "", "", "", "", emptyList(), "", "", "", "")
-}
-
-
 
 
 fun saveInvoiceToFirebase(
@@ -792,6 +777,9 @@ fun saveInvoiceToFirebase(
 
     // Push creates a unique ID for each invoice
     val invoiceId = database.child(safeEmail).push().key
+
+    invoice.id= invoiceId.toString()
+
 
     if (invoiceId == null) {
         onResult(false, "Failed to generate invoice ID")

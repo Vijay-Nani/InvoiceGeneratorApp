@@ -10,6 +10,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InvoiceGenerator"
         tools:targetApi="31">
+
+        <activity
+            android:name=".ManageBusiness"
+            android:exported="false" />
+
+        <activity
+            android:name=".InvoiceSummaryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ManageInvoiceActivity"
+            android:exported="false" />
         <activity
             android:name=".MyInvoiceActivity"
             android:exported="false" />

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +43,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -71,18 +73,12 @@ suspend fun fetchInvoiceList(context: Context): List<InvoiceData> {
             return emptyList()
         }
 
-
         val list = snapshot.children.mapNotNull { child ->
-
             val invoice = child.getValue(InvoiceData::class.java)
-
-
             invoice
         }
 
-
         list
-
     } catch (e: Exception) {
         emptyList()
     }
@@ -98,12 +94,14 @@ fun InvoiceListScreen() {
 
     val context = LocalContext.current
 
+    var isLoading by remember { mutableStateOf(true) }
+
+
     LaunchedEffect(Unit) {
         val data = fetchInvoiceList(context)
+        isLoading = true
 
         invoices = data
-
-
     }
 
     Scaffold(
@@ -128,33 +126,49 @@ fun InvoiceListScreen() {
         },
         content = { padding ->
 
-            if (invoices.isEmpty()) {
-                Toast.makeText(context, "No Invoices Added", Toast.LENGTH_SHORT)
-                    .show()
+            if (isLoading) {
+                // simple loading
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Loading invoices...")
+                }
 
             } else {
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                if (invoices.isEmpty()) {
+                    Toast.makeText(context, "No Invoices Added", Toast.LENGTH_SHORT)
+                        .show()
 
-                    items(invoices.indices.toList()) { index ->
+                } else {
 
-                        val invoice = invoices[index]
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+
+                        items(invoices.indices.toList()) { index ->
+
+                            val invoice = invoices[index]
 
 
 
-                        InvoiceCard(
-                            invoice = invoice,
-                            isExpanded = expandedCardIndex == index,
-                            onClick = {
-                                val newIndex = if (expandedCardIndex == index) -1 else index
-                                expandedCardIndex = newIndex
-                            }
-                        )
+                            InvoiceCard(
+                                invoice = invoice,
+                                isExpanded = expandedCardIndex == index,
+                                onClick = {
+                                    val newIndex = if (expandedCardIndex == index) -1 else index
+                                    expandedCardIndex = newIndex
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -170,6 +184,9 @@ fun InvoiceCard(
     isExpanded: Boolean,
     onClick: () -> Unit
 ) {
+
+    val formattedTopay = String.format("%.1f", invoice.topay.toDoubleOrNull() ?: 0.0)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,7 +218,7 @@ fun InvoiceCard(
                 }
 
                 Text(
-                    text = "£ ${invoice.topay}",
+                    text = "£ $formattedTopay",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E88E5)
@@ -235,7 +252,7 @@ fun InvoiceCard(
                     DetailRow("Total", "£ ${invoice.total}")
                     DetailRow("Tax", "£ ${invoice.tax}")
                     DetailRow("Discount", "£ ${invoice.discount}")
-                    DetailRow("Amount To Pay", "£ ${invoice.topay}")
+                    DetailRow("Amount To Pay", "£ $formattedTopay")
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -247,7 +264,7 @@ fun InvoiceCard(
 
                     invoice.items.forEach {
                         Text(
-                            text = "- ${it.name} • Qty: ${it.description} • £${it.amount}",
+                            text = "- ${it.name} • Description: ${it.description} • ${it.amount}",
                             fontSize = 14.sp,
                             modifier = Modifier.padding(vertical = 2.dp)
                         )
