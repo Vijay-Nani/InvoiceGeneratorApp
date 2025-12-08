@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -310,7 +312,7 @@ fun DetailRow(title: String, value: String) {
     }
 }
 
-suspend fun generatePdfWithMediaStore(
+fun generatePdfWithMediaStore(
     context: Context,
     invoice: InvoiceData
 ): Uri {
@@ -340,12 +342,12 @@ suspend fun generatePdfWithMediaStore(
         // ----------- BUSINESS INFO -----------
         paint.textSize = 22f
         paint.typeface = Typeface.DEFAULT_BOLD
-        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_NAME"), 40f, 60f, paint)
+        canvas.drawText(BusinessPrefs.get(context, "business_name"), 40f, 60f, paint)
 
         paint.textSize = 14f
         paint.typeface = Typeface.DEFAULT
-        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_TYPE"), 40f, 90f, paint)
-        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_ADDRESS"), 40f, 120f, paint)
+        canvas.drawText(BusinessPrefs.get(context, "business_type"), 40f, 90f, paint)
+        canvas.drawText(BusinessPrefs.get(context, "business_address"), 40f, 120f, paint)
 
         // ----------- INVOICE HEADER ----------
         canvas.drawText("Invoice Number: ${invoice.invoicenumber}", 40f, 170f, paint)
@@ -357,8 +359,10 @@ suspend fun generatePdfWithMediaStore(
         canvas.drawText("Email: ${invoice.clientemail}", 40f, 300f, paint)
 
         // ----------- ITEMS ----------
+        paint.typeface = Typeface.DEFAULT_BOLD
         canvas.drawText("Items:", 40f, 340f, paint)
 
+        paint.typeface = Typeface.DEFAULT
         var y = 370f
         invoice.items.forEach {
             canvas.drawText("${it.name} - ${it.description} - ${it.amount}", 40f, y, paint)
@@ -371,12 +375,26 @@ suspend fun generatePdfWithMediaStore(
         canvas.drawText("Discount: £${invoice.discount}", 40f, y + 100, paint)
         canvas.drawText("To Pay: £${invoice.topay}", 40f, y + 130, paint)
 
+        // ----------- QR CODE IMAGE ----------
+        val qrBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.qrcode)
+
+        // Scale QR to a good PDF size (150x150 px)
+        val scaledQR = Bitmap.createScaledBitmap(qrBitmap, 180, 180, false)
+
+        val qrX = 380f
+        val qrY = 200f
+
+        canvas.drawBitmap(scaledQR, qrX, qrY, paint)
+
+        paint.typeface = Typeface.DEFAULT_BOLD
+        paint.textSize = 14f
+        canvas.drawText("Pay to this QR", qrX, qrY + 200, paint)
+
         doc.finishPage(page)
         doc.writeTo(outStream)
         doc.close()
     }
 
-    // Mark PDF ready
     values.put(MediaStore.Downloads.IS_PENDING, 0)
     resolver.update(uri, values, null, null)
 

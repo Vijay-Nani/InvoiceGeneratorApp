@@ -201,7 +201,7 @@ fun FillActivityScreen() {
                                 set(Calendar.MILLISECOND, 0)
                             }.timeInMillis
 
-                            openDatePicker({ dobDate = it }, today)
+                            openDatePicker({ dobDate = it }, 1990)
                         }
                     )
 

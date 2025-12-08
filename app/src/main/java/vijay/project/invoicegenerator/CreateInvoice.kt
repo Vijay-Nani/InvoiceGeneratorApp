@@ -311,6 +311,16 @@ fun CreateInvoiceScreen() {
                     }
                 }
 
+                val defaultTax = BusinessPrefs.get(context,"TAX_PERCENT")
+                val defaultDiscount = BusinessPrefs.get(context,"DISCOUNT_PERCENT")
+
+                val tax = BusinessPrefs.get(context,"TAX_PERCENT")
+
+                if(tax.isEmpty())
+                {
+
+                }
+
 
                 // Summary card that computes totals from itemList
                 SummaryCardFromItems(
@@ -356,8 +366,8 @@ fun CreateInvoiceScreen() {
                         }
                     },
                     itemList = itemList,
-                    taxPercent = BusinessPrefs.get(context,"TAX_PERCENT").toDouble(),
-                    discountPercent = BusinessPrefs.get(context,"DISCOUNT_PERCENT").toDouble()
+                    taxPercent = BusinessPrefs.get(context,"TAX_PERCENT","18").toDouble(),
+                    discountPercent = BusinessPrefs.get(context,"DISCOUNT_PERCENT","10").toDouble()
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
