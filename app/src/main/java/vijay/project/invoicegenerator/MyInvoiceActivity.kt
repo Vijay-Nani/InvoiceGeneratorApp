@@ -2,16 +2,19 @@ package vijay.project.invoicegenerator
 
 
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +30,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +57,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 
@@ -99,7 +107,7 @@ fun InvoiceListScreen() {
 
     LaunchedEffect(Unit) {
         val data = fetchInvoiceList(context)
-        isLoading = true
+        isLoading = false
 
         invoices = data
     }
@@ -184,6 +192,20 @@ fun InvoiceCard(
     isExpanded: Boolean,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
+
+
+    if (isLoading) {
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {}, // required in Material3
+            title = { Text("Generating Invoice") },
+            text = { Text("Please wait…") }
+        )
+
+
+    }
 
     val formattedTopay = String.format("%.1f", invoice.topay.toDoubleOrNull() ?: 0.0)
 
@@ -192,29 +214,17 @@ fun InvoiceCard(
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // ---------- TOP ROW ----------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(
-                        text = "Invoice Date",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = invoice.invoicedate,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Invoice Date", fontSize = 12.sp, color = Color.Gray)
+                    Text(invoice.invoicedate, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Text(
@@ -226,19 +236,9 @@ fun InvoiceCard(
             }
 
             Spacer(modifier = Modifier.height(10.dp))
+            Text(invoice.clientname, fontSize = 15.sp, fontWeight = FontWeight.Medium)
 
-            Text(
-                text = invoice.clientname,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            // ---------- EXPANDED SECTION ----------
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
+            AnimatedVisibility(isExpanded) {
                 Column(
                     modifier = Modifier
                         .padding(top = 12.dp)
@@ -252,28 +252,50 @@ fun InvoiceCard(
                     DetailRow("Total", "£ ${invoice.total}")
                     DetailRow("Tax", "£ ${invoice.tax}")
                     DetailRow("Discount", "£ ${invoice.discount}")
-                    DetailRow("Amount To Pay", "£ $formattedTopay")
+                    DetailRow("To Pay", "£ $formattedTopay")
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        text = "Items",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
+                    Text("Items", fontWeight = FontWeight.Bold)
                     invoice.items.forEach {
-                        Text(
-                            text = "- ${it.name} • Description: ${it.description} • ${it.amount}",
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
+                        Text("- ${it.name} • ${it.description} • ${it.amount}", fontSize = 14.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            isLoading = true
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val uri = generatePdfWithMediaStore(context, invoice)
+                                isLoading = false
+                                sharePdfUri(context, uri)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                    ) {
+                        Text("Share Invoice", color = Color.White)
                     }
                 }
             }
         }
     }
 }
+
+
+fun sharePdfUri(context: Context, pdfUri: Uri) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/pdf"
+        putExtra(Intent.EXTRA_STREAM, pdfUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    context.startActivity(
+        Intent.createChooser(intent, "Share Invoice PDF")
+    )
+}
+
 
 @Composable
 fun DetailRow(title: String, value: String) {
@@ -286,6 +308,79 @@ fun DetailRow(title: String, value: String) {
         Text(text = title, fontSize = 14.sp, color = Color.Gray)
         Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Medium)
     }
+}
+
+suspend fun generatePdfWithMediaStore(
+    context: Context,
+    invoice: InvoiceData
+): Uri {
+
+    val fileName = "Invoice_${invoice.invoicenumber}.pdf"
+
+    val values = ContentValues().apply {
+        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+        put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+        put(MediaStore.Downloads.RELATIVE_PATH, "Download/")
+        put(MediaStore.Downloads.IS_PENDING, 1)
+    }
+
+    val resolver = context.contentResolver
+    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+        ?: throw Exception("Failed to create PDF file location")
+
+    resolver.openOutputStream(uri).use { outStream ->
+
+        val doc = PdfDocument()
+        val paint = Paint()
+
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val page = doc.startPage(pageInfo)
+        val canvas = page.canvas
+
+        // ----------- BUSINESS INFO -----------
+        paint.textSize = 22f
+        paint.typeface = Typeface.DEFAULT_BOLD
+        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_NAME"), 40f, 60f, paint)
+
+        paint.textSize = 14f
+        paint.typeface = Typeface.DEFAULT
+        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_TYPE"), 40f, 90f, paint)
+        canvas.drawText(BusinessPrefs.get(context, "BUSINESS_ADDRESS"), 40f, 120f, paint)
+
+        // ----------- INVOICE HEADER ----------
+        canvas.drawText("Invoice Number: ${invoice.invoicenumber}", 40f, 170f, paint)
+        canvas.drawText("Invoice Date: ${invoice.invoicedate}", 40f, 200f, paint)
+        canvas.drawText("Due Date: ${invoice.duedate}", 40f, 230f, paint)
+
+        // ----------- CLIENT DETAILS ----------
+        canvas.drawText("Bill To: ${invoice.clientname}", 40f, 270f, paint)
+        canvas.drawText("Email: ${invoice.clientemail}", 40f, 300f, paint)
+
+        // ----------- ITEMS ----------
+        canvas.drawText("Items:", 40f, 340f, paint)
+
+        var y = 370f
+        invoice.items.forEach {
+            canvas.drawText("${it.name} - ${it.description} - ${it.amount}", 40f, y, paint)
+            y += 30f
+        }
+
+        // ----------- TOTALS ----------
+        canvas.drawText("Total: £${invoice.total}", 40f, y + 40, paint)
+        canvas.drawText("Tax: £${invoice.tax}", 40f, y + 70, paint)
+        canvas.drawText("Discount: £${invoice.discount}", 40f, y + 100, paint)
+        canvas.drawText("To Pay: £${invoice.topay}", 40f, y + 130, paint)
+
+        doc.finishPage(page)
+        doc.writeTo(outStream)
+        doc.close()
+    }
+
+    // Mark PDF ready
+    values.put(MediaStore.Downloads.IS_PENDING, 0)
+    resolver.update(uri, values, null, null)
+
+    return uri
 }
 
 

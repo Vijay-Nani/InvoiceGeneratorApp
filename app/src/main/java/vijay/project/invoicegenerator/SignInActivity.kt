@@ -19,9 +19,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -159,11 +164,16 @@ fun EnterActivityScreen() {
                         ),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            Image(
-                                painter = painterResource(id = R.drawable.baseline_password_24),
-                                contentDescription = "Toggle Password Visibility",
-                                modifier = Modifier.clickable { passwordVisible = !passwordVisible }
-                            )
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
+
+                            val description =
+                                if (passwordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, description)
+                            }
                         }
                     )
 
@@ -201,7 +211,8 @@ fun EnterActivityScreen() {
                                                     snapshot.getValue(AccountData::class.java)
                                                 accountData?.let {
 
-                                                    if (password == it.password) {
+
+                                                    if (CryptoUtils.decrypt(password) == it.password) {
 
                                                         UserPrefs.markLoginStatus(context, true)
                                                         UserPrefs.saveEmail(
@@ -268,6 +279,25 @@ fun EnterActivityScreen() {
                             modifier = Modifier.clickable {
                                 context.startActivity(Intent(context, SignupActivity::class.java))
                                 (context as Activity).finish()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Footer Text
+                    Row {
+                        Text(text = "Forgot Password? ", color = Color.Black)
+                        Text(
+                            text = "Reset it now!",
+                            color = Color.Blue,
+                            modifier = Modifier.clickable {
+                                context.startActivity(
+                                    Intent(
+                                        context,
+                                        ResetPasswordActivity::class.java
+                                    )
+                                )
                             }
                         )
                     }

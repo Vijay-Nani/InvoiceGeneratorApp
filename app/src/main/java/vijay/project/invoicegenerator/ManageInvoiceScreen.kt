@@ -169,7 +169,6 @@ fun InvoiceListScreen(onEdit: (String) -> Unit) {
 
     LaunchedEffect(Unit) {
         Log.d("INVOICE_UI", "fetching invoices (initial)...")
-        isLoading = true
         invoices = fetchInvoiceList(context)
         isLoading = false
         Log.d("INVOICE_UI", "Invoices loaded: ${invoices.size}")
@@ -216,52 +215,54 @@ fun InvoiceListScreen(onEdit: (String) -> Unit) {
                 return@Box
             }
 
-            if (invoices.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("No invoices found", fontSize = 18.sp)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    itemsIndexed(invoices) { index, invoice ->
-                        InvoiceListCard(
-                            invoice = invoice,
-                            isExpanded = expandedIndex == index,
-                            onToggleExpand = {
-                                expandedIndex = if (expandedIndex == index) -1 else index
-                            },
-                            onMarkPaid = {
-                                scope.launch {
-                                    val ok = markInvoicePaid(context, invoice.id)
-                                    if (ok) {
-                                        Toast.makeText(
-                                            context,
-                                            "Marked as Paid",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        invoices = fetchInvoiceList(context)
+                if (invoices.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("No invoices found", fontSize = 18.sp)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(invoices) { index, invoice ->
+                            InvoiceListCard(
+                                invoice = invoice,
+                                isExpanded = expandedIndex == index,
+                                onToggleExpand = {
+                                    expandedIndex = if (expandedIndex == index) -1 else index
+                                },
+                                onMarkPaid = {
+                                    scope.launch {
+                                        val ok = markInvoicePaid(context, invoice.id)
+                                        if (ok) {
+                                            Toast.makeText(
+                                                context,
+                                                "Marked as Paid",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            invoices = fetchInvoiceList(context)
+                                        }
                                     }
+                                },
+                                onDelete = {
+                                    deletingInvoiceId = invoice.id
+                                    showDeleteConfirm = true
                                 }
-                            },
-                            onDelete = {
-                                deletingInvoiceId = invoice.id
-                                showDeleteConfirm = true
-                            }
-                        )
+                            )
 
+                        }
                     }
                 }
-            }
+
+
 
             // Delete confirmation dialog
             if (showDeleteConfirm && deletingInvoiceId != null) {

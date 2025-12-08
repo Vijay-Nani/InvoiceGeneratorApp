@@ -130,7 +130,7 @@ fun HomeScreen() {
                     )
                     {
                         Image(
-                            painter = painterResource(id = R.drawable.profile),
+                            painter = painterResource(id = R.drawable.ic_main),
                             contentDescription = "",
                             modifier = Modifier
                                 .size(44.dp)
@@ -469,6 +469,12 @@ fun HomeScreen() {
                         modifier = Modifier
                             .weight(1f)
                             .clickable {
+                                (context as Activity).startActivity(
+                                    Intent(
+                                        context,
+                                        ProfileActivity::class.java
+                                    )
+                                )
                             }
                             .background(
                                 color = Color(0xFFEFEFEF),   // your background color

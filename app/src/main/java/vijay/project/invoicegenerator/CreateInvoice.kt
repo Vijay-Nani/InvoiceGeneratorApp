@@ -356,8 +356,8 @@ fun CreateInvoiceScreen() {
                         }
                     },
                     itemList = itemList,
-                    taxPercent = BusinessPrefs.getTaxPercentage(context).toDouble(),
-                    discountPercent = BusinessPrefs.getDiscountPercentage(context).toDouble()
+                    taxPercent = BusinessPrefs.get(context,"TAX_PERCENT").toDouble(),
+                    discountPercent = BusinessPrefs.get(context,"DISCOUNT_PERCENT").toDouble()
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

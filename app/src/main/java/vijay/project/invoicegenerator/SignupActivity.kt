@@ -2,6 +2,7 @@ package vijay.project.invoicegenerator
 
 
 import android.app.Activity
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -19,10 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -37,13 +42,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.firebase.database.FirebaseDatabase
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class SignupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +82,29 @@ fun FillActivityScreen() {
 
     val context = LocalContext.current
 
+    val context1 = LocalContext.current
+
+    var dobDate by remember { mutableStateOf("") }
+
+    val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+    fun openDatePicker(onSelect: (String) -> Unit, minDate: Long? = null) {
+        val dp = DatePickerDialog(
+            context1,
+            { _, year, month, day ->
+                val c = Calendar.getInstance().apply {
+                    set(year, month, day)
+                }
+                onSelect(dateFormat.format(c.time))
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        if (minDate != null) dp.datePicker.minDate = minDate
+        dp.show()
+    }
 
     Box(
         modifier = Modifier
@@ -149,6 +179,21 @@ fun FillActivityScreen() {
                         )
                     )
 
+                    DOBDateField(
+                        label = "Date of Birth",
+                        value = dobDate,
+                        onClick = {
+                            val today = Calendar.getInstance().apply {
+                                set(Calendar.HOUR_OF_DAY, 0)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }.timeInMillis
+
+                            openDatePicker({ dobDate = it }, today)
+                        }
+                    )
+
 
                     // Last Name TextField
                     OutlinedTextField(
@@ -211,13 +256,18 @@ fun FillActivityScreen() {
                         ),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_password_24),
-                                contentDescription = "Toggle Password Visibility",
-                                modifier = Modifier.clickable {
-                                    passwordVisible = !passwordVisible
-                                })
-                        })
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
+
+                            val description =
+                                if (passwordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, description)
+                            }
+                        }
+                    )
 
 
                     OutlinedTextField(
@@ -231,16 +281,8 @@ fun FillActivityScreen() {
                             disabledContainerColor = Color.LightGray,
                             focusedBorderColor = Color(0xFF6200EE),
                             unfocusedBorderColor = Color.Gray
-                        ),
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_password_24),
-                                contentDescription = "Toggle Password Visibility",
-                                modifier = Modifier.clickable {
-                                    passwordVisible = !passwordVisible
-                                })
-                        })
+                        )
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -275,12 +317,13 @@ fun FillActivityScreen() {
                                 else -> {
                                     errorMessage = ""
 
+
                                     val userData = AccountData(
                                         name = FullName,
                                         companyName = CompanyName,
                                         address = Address,
                                         email = email,
-                                        password = password
+                                        password = CryptoUtils.encrypt(password)
                                     )
 
 
@@ -349,8 +392,34 @@ fun FillActivityScreen() {
 data class AccountData
     (
     var name: String = "",
+    var dob: String = "",
     var companyName: String = "",
     var address: String = "",
     var email: String = "",
     var password: String = "",
 )
+
+
+@Composable
+fun DOBDateField(label: String, value: String, onClick: () -> Unit) {
+    Column {
+        Text(label, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(6.dp))
+
+        Box {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {},
+                readOnly = true,
+                placeholder = { Text("Select $label") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Color.Transparent)
+                    .clickable { onClick() }
+            )
+        }
+    }
+}
