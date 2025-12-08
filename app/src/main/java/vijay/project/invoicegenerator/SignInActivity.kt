@@ -212,7 +212,7 @@ fun EnterActivityScreen() {
                                                 accountData?.let {
 
 
-                                                    if (CryptoUtils.decrypt(password) == it.password) {
+                                                    if (CryptoUtils.decrypt(it.password) == password) {
 
                                                         UserPrefs.markLoginStatus(context, true)
                                                         UserPrefs.saveEmail(

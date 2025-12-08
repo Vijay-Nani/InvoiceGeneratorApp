@@ -89,7 +89,11 @@ fun FillActivityScreen() {
     val calendar = Calendar.getInstance()
     val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
-    fun openDatePicker(onSelect: (String) -> Unit, minDate: Long? = null) {
+    fun openDatePicker(
+        onSelect: (String) -> Unit,
+        minDate: Long? = null,
+        maxDate: Long? = null
+    ) {
         val dp = DatePickerDialog(
             context1,
             { _, year, month, day ->
@@ -102,9 +106,16 @@ fun FillActivityScreen() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
-        if (minDate != null) dp.datePicker.minDate = minDate
+
+        // Allow selecting date from minimum date
+        minDate?.let { dp.datePicker.minDate = it }
+
+        // Allow selecting date up to maximum date
+        maxDate?.let { dp.datePicker.maxDate = it }
+
         dp.show()
     }
+
 
     Box(
         modifier = Modifier
